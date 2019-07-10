@@ -40,6 +40,12 @@
 #include "main.h"
 #include "usart.h"
 #include "gpio.h"
+#include "sensor.h"
+#include "lcd.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
 
 /* USER CODE BEGIN Includes */
 
@@ -56,6 +62,12 @@
 static void LL_Init(void);
 void SystemClock_Config(void);
 
+#include <stdio.h>
+int _write(int file,char* ptr, int len){
+	for(int i=0; i<len;i++){
+		while(LL_USART_IsActiveFlag_TXE(USART2)==0);
+		LL_USART_TransmitData8(USART2,*ptr);ptr++;}
+return len;}
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
 
@@ -72,6 +84,9 @@ void SystemClock_Config(void);
   */
 int main(void)
 {
+	SENSOR HCSR04;
+
+
   /* USER CODE BEGIN 1 */
 
   /* USER CODE END 1 */
@@ -93,26 +108,59 @@ int main(void)
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
+
   MX_GPIO_Init();
   MX_USART2_UART_Init();
 
+  //on initialise le capteur
+  SENSOR_Init(&HCSR04, GPIOB, 8, GPIOB, 0);
 
   /* USER CODE BEGIN 2 */
   LL_Init1msTick(16000);
-  /* USER CODE END 2 */
 
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
+  //activation de l'horloge pour GPIOA et GPIOB
+  RCC->IOPENR |= RCC_IOPENR_GPIOAEN | RCC_IOPENR_GPIOBEN;
+
+  lcdinit4();
+  int dist;
+  int dist1;
+  int dist2;
+  int speed;
+
+  char Text_LCD1[20];
+  char Text_LCD2[20];
+  char  dist_array[20];
+  char  speed_array[20];
+
+  //Affichage_LCD(Text_LCD1,Text_LCD2);
+
+
+
   while (1)
   {
 
-  /* USER CODE END WHILE */
-	  captor();
-  /* USER CODE BEGIN 3 */
+	 dist = sensor_dist(&HCSR04);
+	 dist1 = dist;
+	 //Affichage_LCD("Abidjan", "CIV");
+	 strcpy(Text_LCD1, "Distance : ");
+	 itoa(dist, dist_array, 10);
+	 strcat(Text_LCD1, dist_array);
+	 strcat(Text_LCD1, "cm");
+
+	 LL_mDelay(1000);
+	 dist=0;
+	 dist = sensor_dist(&HCSR04);
+	 dist2 = dist;
+	 speed = abs((dist2 - dist1));
+
+	 strcpy(Text_LCD2, "Speed : ");
+	 itoa(speed, speed_array, 10);
+	 strcat(Text_LCD2, speed_array);
+	 strcat(Text_LCD2, "cm/s");
+
+	 Affichage_LCD(Text_LCD1, Text_LCD2);
 
   }
-  /* USER CODE END 3 */
-
 }
 
 static void LL_Init(void)
